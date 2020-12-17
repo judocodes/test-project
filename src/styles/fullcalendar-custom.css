@@ -1,0 +1,85 @@
+:root {
+  --fc-border-color: #ddd;
+  --fc-minor-border-color: #e9e9e9;
+  --fc-neutral-text-color: #b3b3b3;
+}
+
+/*? ***********************************/
+/*? ********* Parent Table ***********/
+/*? ***********************************/
+
+.fc-theme-standard .fc-scrollgrid {
+  border: 0 !important;
+}
+
+.fc-scrollgrid-section.fc-scrollgrid-section-body > td {
+  border-bottom-width: 0;
+}
+
+/*? ***********************************/
+/*? ********* Day Headers *************/
+/*? ***********************************/
+
+div.fc-theme-standard th.fc-timegrid-axis {
+  border: 0;
+}
+
+.fc .fc-col-header-cell {
+  border: 0;
+}
+
+.fc .fc-col-header-cell-cushion {
+  margin-bottom: 12px;
+  font-weight: 500;
+  color: #666;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+/*? ***********************************/
+/*? ********** Slots & Lanes **********/
+/*? ***********************************/
+.fc .fc-timegrid-slots {
+  position: relative;
+  z-index: 1;
+}
+.fc .fc-timegrid-slot {
+  /* a <td> */
+  height: 4em;
+  border-top: 1px solid var(--fc-minor-border-color);
+  border-left: 0;
+  border-bottom: none; /* each cell owns its top border */
+}
+
+.fc .fc-timegrid-slot:empty:before {
+  content: ' '; /* make sure there's at least an empty space to create height for height syncing */
+}
+.fc .fc-timegrid-slot-minor {
+  border: 0;
+}
+
+.fc .fc-timegrid-slot-label {
+  vertical-align: middle; /* vertical align the slots */
+  border: 0;
+}
+
+.fc .fc-timegrid-slot-label .fc-timegrid-slot-label-frame {
+}
+
+.fc .fc-timegrid-slot-label .fc-timegrid-slot-label-cushion {
+  transform: translateY(-50%);
+  display: inline-block;
+  white-space: nowrap;
+  color: var(--fc-neutral-text-color);
+  margin-right: 0.5rem;
+}
+
+/*? ***********************************/
+/*? ********* Timegrid Columns ********/
+/*? ***********************************/
+
+.fc-timegrid-cols .fc-timegrid-axis,
+.fc-timegrid-cols .fc-timegrid-axis + .fc-day {
+  border: 0;
+}
