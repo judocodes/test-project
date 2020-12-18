@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState } from 'react';
-import ReactDOM from 'react-dom';
 import FullCalendar, {
   EventSourceInput,
   EventClickArg,
@@ -10,7 +9,8 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 
 // Components
-import CalendarPopUp from './CalendarPopUp';
+import CalendarPopUp, { myEventClickArg } from './CalendarPopUp';
+import CalendarOptions from './CalendarOptions';
 
 const startOfTeachingDay = '08:00';
 const endOfTeachingDay = '18:00';
@@ -24,6 +24,7 @@ interface IProps {
 const Calendar: React.FunctionComponent<IProps> = props => {
   const calendarEl = useRef<FullCalendar>(null);
   const [allEvents, setAllEvents] = useState<EventSourceInput>([]);
+  const [clickedEvent, setClickedEvent] = useState<myEventClickArg>(null);
 
   useEffect(() => {
     const calendar = calendarEl.current?.getApi();
@@ -47,10 +48,13 @@ const Calendar: React.FunctionComponent<IProps> = props => {
     }
   };
 
-  const handleEventClick = (event: EventClickArg) => {};
+  const handleEventClick = (event: EventClickArg) => {
+    console.log(event);
+    setClickedEvent(event as myEventClickArg);
+  };
 
-  const handleDateClick = (dateClickInfo: DateClickArg) => {
-    console.log(dateClickInfo);
+  const unsetClickedEvent = (dateClickInfo: DateClickArg) => {
+    setClickedEvent(null);
   };
 
   const handleEventChange = (dragInfo: EventChangeArg) => {
@@ -67,7 +71,10 @@ const Calendar: React.FunctionComponent<IProps> = props => {
 
   return (
     <>
-      {/* <CalendarPopUp event={allEvents[0]} /> */}
+      <CalendarPopUp
+        clickedEvent={clickedEvent}
+        unsetClickedEvent={unsetClickedEvent}
+      />
       <FullCalendar
         ref={calendarEl}
         initialView="timeGridWeek"
@@ -135,7 +142,7 @@ const Calendar: React.FunctionComponent<IProps> = props => {
           return !event;
         }}
         // *** Edit Event options
-        editable={true}
+        editable={!clickedEvent} /* Only editable if no pop-up is opened */
         eventDragMinDistance={10}
         eventOverlap={(stillEvent, movingEvent) => {
           // Could check if one of the two is pending.
@@ -144,9 +151,11 @@ const Calendar: React.FunctionComponent<IProps> = props => {
         eventChange={handleEventChange}
         // *** Main Callbacks
         select={handleSelect}
-        dateClick={handleDateClick}
+        // unselect={() => console.log('unselected')}
+        dateClick={unsetClickedEvent}
         eventClick={handleEventClick}
       />
+      <CalendarOptions />
     </>
   );
 };
