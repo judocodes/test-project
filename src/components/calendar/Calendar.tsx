@@ -4,6 +4,7 @@ import FullCalendar, {
   EventClickArg,
   DateSelectArg,
   EventChangeArg,
+  BusinessHoursInput,
 } from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
@@ -12,20 +13,39 @@ import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import CalendarPopUp, { myEventClickArg } from './CalendarPopUp';
 import CalendarOptions from './CalendarOptions';
 
-const startOfTeachingDay = '08:00';
-const endOfTeachingDay = '18:00';
-const hiddenDays = [];
-const showNowIndicator = true;
+// Test Data
+import { events } from '../../test-data/events';
+
+// Hooks
+import { useCalendarOptions } from './useCalendarOptions';
+
+const startOfTeachingDay = '0:00';
+const endOfTeachingDay = '24:00';
+const businessHours: BusinessHoursInput = [
+  {
+    daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+    startTime: '10:00',
+    endTime: '14:00',
+  },
+  {
+    daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+    startTime: '16:00',
+    endTime: '20:00',
+  },
+];
 
 interface IProps {
   [n: string]: any;
 }
 
 const Calendar: React.FunctionComponent<IProps> = props => {
+  const [options, dispatchOptions] = useCalendarOptions();
+
   const calendarEl = useRef<FullCalendar>(null);
   const [allEvents, setAllEvents] = useState<EventSourceInput>([]);
   const [clickedEvent, setClickedEvent] = useState<myEventClickArg>(null);
 
+  console.log(events);
   useEffect(() => {
     const calendar = calendarEl.current?.getApi();
     if (calendar) {
@@ -80,9 +100,11 @@ const Calendar: React.FunctionComponent<IProps> = props => {
         initialView="timeGridWeek"
         plugins={[timeGridPlugin, interactionPlugin]}
         locale={'de'}
-        events={allEvents}
+        // initialEvents={events}
+        events={events /* allEvents */}
+        // eventSources={[events]}
         // *** View Options
-        nowIndicator={showNowIndicator}
+        nowIndicator={options.showNowIndicator}
         dayCount={7}
         headerToolbar={{
           start: 'title',
@@ -100,13 +122,15 @@ const Calendar: React.FunctionComponent<IProps> = props => {
         buttonText={{
           today: 'Heute',
         }}
-        hiddenDays={hiddenDays}
         firstDay={1}
         slotEventOverlap={false}
         allDaySlot={false}
+        // *** Setting the times
         slotDuration={'00:15'}
         slotMinTime={startOfTeachingDay}
         slotMaxTime={endOfTeachingDay}
+        hiddenDays={options.hiddenDays}
+        // businessHours={businessHours}
         // *** General Styles
         aspectRatio={1.8}
         expandRows={true}
@@ -155,7 +179,7 @@ const Calendar: React.FunctionComponent<IProps> = props => {
         dateClick={unsetClickedEvent}
         eventClick={handleEventClick}
       />
-      <CalendarOptions />
+      <CalendarOptions dispatch={dispatchOptions} options={options} />
     </>
   );
 };
