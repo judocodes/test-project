@@ -1,24 +1,26 @@
 import { EventSourceInput, EventInput } from '@fullcalendar/react';
 
 // Handy vars
-const today = new Date();
-const todayString = today.toISOString().replace(/T.*/, '');
+const tomorrow = new Date();
+tomorrow.setDate(new Date().getDate() + 1);
+tomorrow.setHours(1, 0, 0, 0);
+const tomorrowString = tomorrow.toISOString().replace(/T.*/, '');
 
 const eventTitles = 'ABCDEFG'.split('');
 let startTimes: number[] = [];
 for (let i = 10; i <= 16; i++) {
   // Get miliseconds of start time.
-  const startingTime = new Date(todayString + 'T' + (i + 1) + ':00');
-  startTimes.push(startingTime.getTime());
+  const startingTime = new Date(tomorrowString + 'T' + i + ':00').getTime();
+  startTimes.push(startingTime);
 }
 
 // Events List
-const events: EventSourceInput = startTimes.map(
+const events: EventInput[] = startTimes.map(
   (time, idx): EventInput => ({
-    start: todayString,
-    startTime: time,
+    start: tomorrow,
+    startTime: time - tomorrow.getTime(),
     title: eventTitles[idx],
-    daysOfWeek: [today.getDay()],
+    daysOfWeek: [tomorrow.getDay()],
     classNames: ['bg-gray-700', 'text-white'],
     editable: false,
     display:
@@ -27,7 +29,7 @@ const events: EventSourceInput = startTimes.map(
 
     // just for fun.
     extendedProps: {
-      num: Math.random(),
+      studentId: eventTitles[idx],
     },
   })
 );
