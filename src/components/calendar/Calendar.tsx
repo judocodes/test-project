@@ -5,9 +5,16 @@ import FullCalendar, {
   DateSelectArg,
   EventChangeArg,
   BusinessHoursInput,
+  EventRemoveArg,
+  EventInput,
+  EventContentArg,
+  render,
 } from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
+import interactionPlugin from '@fullcalendar/interaction';
+import { nanoid } from 'nanoid';
+import tw from 'twin.macro';
+import cc from 'classcat';
 
 // Components
 import CalendarPopUp, { myEventClickArg } from './CalendarPopUp';
@@ -16,8 +23,9 @@ import CalendarOptions from './CalendarOptions';
 // Test Data
 import { events } from '../../test-data/events';
 
-// Hooks
+// Hooks & Utils
 import { useCalendarOptions } from './useCalendarOptions';
+import { getRescheduledEvent } from '../../utils/resort-events';
 
 const startOfTeachingDay = '0:00';
 const endOfTeachingDay = '24:00';
@@ -42,58 +50,101 @@ const Calendar: React.FunctionComponent<IProps> = props => {
   const [options, dispatchOptions] = useCalendarOptions();
 
   const calendarEl = useRef<FullCalendar>(null);
-  const [allEvents, setAllEvents] = useState<EventSourceInput>([]);
+  const [allEvents, setAllEvents] = useState<EventInput[]>(events);
+
   const [clickedEvent, setClickedEvent] = useState<myEventClickArg>(null);
 
-  console.log(events);
-  useEffect(() => {
-    const calendar = calendarEl.current?.getApi();
-    if (calendar) {
-      calendar.scrollToTime(new Date().getTime());
-    }
-  }, []);
-
-  useEffect(() => {
-    const calendar = calendarEl.current?.getApi();
-    // Dynamically Set Content Height
-    // calendar.setOption('contentHeight', 700);
-  }, [calendarEl]);
+  // useEffect(() => {
+  //   const calendar = calendarEl.current?.getApi();
+  //   // Dynamically Set Content Height
+  //   // calendar.setOption('contentHeight', 700);
+  // }, [calendarEl]);
 
   const handleSelect = (selectionInfo: DateSelectArg) => {
     const title = prompt('Name of the Event');
+
     if (confirm('Do you want to add this event?')) {
       if (title) {
-        setAllEvents(events => [...events, { ...selectionInfo, title }]);
+        const newEvent = {
+          ...selectionInfo,
+          id: nanoid(),
+          confirmed: false,
+          title,
+        };
+        setAllEvents(e => [...e, newEvent]);
       }
     }
   };
 
   const handleEventClick = (event: EventClickArg) => {
-    console.log(event);
     setClickedEvent(event as myEventClickArg);
   };
 
-  const unsetClickedEvent = (dateClickInfo: DateClickArg) => {
+  const unsetClickedEvent = () => {
     setClickedEvent(null);
   };
 
-  const handleEventChange = (dragInfo: EventChangeArg) => {
-    if (!confirm(`Ask ${dragInfo.event._def.title} to change the time?`)) {
-      dragInfo.revert();
-    } else {
-      // go on to ask the student
-      console.log(dragInfo);
-      setTimeout(() => {
-        alert('Email has been sent.');
-      }, 500);
+  const deleteEvent = (removedEvent: myEventClickArg) => {
+    if (confirm('Do you want to delete this event?')) {
+      const newEvent = getRescheduledEvent(removedEvent.event, allEvents);
+      if (newEvent) {
+        setAllEvents(events => [
+          ...events.filter(e => e.id !== removedEvent.event.id),
+          newEvent,
+        ]);
+      }
+
+      /* normally:
+
+          send to API that this event is removed
+          delete it from DB
+          request new event from api
+
+          Question: DO I NEED THE REMOVE CALLBACK AT ALL?
+            no, right?
+
+      */
     }
   };
 
+  const handleEventRemove = (removeInfo: EventRemoveArg) => {};
+
+  const handleEventChange = (dragInfo: EventChangeArg) => {
+    if (confirm(`Ask ${dragInfo.event._def.title} to change the time?`)) {
+      setTimeout(() => {
+        alert('Email has been sent.');
+      }, 500);
+      // go on to ask the student
+    } else {
+      dragInfo.revert();
+    }
+  };
+
+  // const renderEventContent = (eventContent: EventContentArg) => {
+  //   if (count === 0) console.log(eventContent);
+  //   count++;
+  //   const { accepted } = eventContent.event.extendedProps as {
+  //     accepted: boolean;
+  //   };
+
+  //   // eventContent.event.setProp('color', 'black');
+
+  //   return (
+  //     <>
+  //       <div>
+  //         <span>{eventContent.timeText}</span>
+  //       </div>
+  //     </>
+  //   );
+  // };
+
   return (
     <>
+      <div className="text-gray-300"></div>
       <CalendarPopUp
         clickedEvent={clickedEvent}
         unsetClickedEvent={unsetClickedEvent}
+        deleteEvent={deleteEvent}
       />
       <FullCalendar
         ref={calendarEl}
@@ -101,10 +152,14 @@ const Calendar: React.FunctionComponent<IProps> = props => {
         plugins={[timeGridPlugin, interactionPlugin]}
         locale={'de'}
         // initialEvents={events}
-        events={events /* allEvents */}
-        // eventSources={[events]}
+        eventSources={styleEventSource(allEvents)}
         // *** View Options
         nowIndicator={options.showNowIndicator}
+        scrollTime={
+          // MS that have passed on THAT very day.
+          Date.now() -
+          new Date(new Date().toISOString().replace(/T.*/, '')).getTime()
+        }
         dayCount={7}
         headerToolbar={{
           start: 'title',
@@ -173,11 +228,29 @@ const Calendar: React.FunctionComponent<IProps> = props => {
           return false;
         }}
         eventChange={handleEventChange}
+        // *** Event Styling
+        // eventContent={renderEventContent} /* This is for the inner styling of the event */
+        // eventClassNames={() => ['']} This is for the outer elements classnames
+
+        // This is very unperformant. Create this in globalscope or find a different solution.
+        eventBackgroundColor={(tw`text-blue-800`.color as string).replace(
+          /var.*/,
+          '1)'
+        )}
+        eventBorderColor={(tw`text-blue-100`.color as string).replace(
+          /var.*/,
+          '1)'
+        )}
+        eventTextColor={(tw`text-blue-100`.color as string).replace(
+          /var.*/,
+          '1)'
+        )}
         // *** Main Callbacks
         select={handleSelect}
         // unselect={() => console.log('unselected')}
         dateClick={unsetClickedEvent}
         eventClick={handleEventClick}
+        eventRemove={handleEventRemove}
       />
       <CalendarOptions dispatch={dispatchOptions} options={options} />
     </>
@@ -185,3 +258,18 @@ const Calendar: React.FunctionComponent<IProps> = props => {
 };
 
 export { Calendar };
+
+// TODO: Make this useMemo instead.
+// Is there a way to the filtering? Could split up allEvents into pendingEvents and confirmedEvents
+function styleEventSource(events: EventInput[]): EventSourceInput[] {
+  return [
+    {
+      events: events.filter(e => e.confirmed),
+    },
+    {
+      events: events.filter(e => !e.confirmed),
+      color: (tw`text-gray-200`.color as string).replace(/var.*/, '1)'),
+      textColor: tw`text-gray-800`.color as string,
+    },
+  ];
+}

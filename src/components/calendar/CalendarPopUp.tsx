@@ -13,6 +13,7 @@ export type myEventClickArg = EventClickArg & {
 interface Props {
   clickedEvent: myEventClickArg | null;
   unsetClickedEvent: (arg: any) => void;
+  deleteEvent: (arg: any) => void;
 }
 
 interface State {
@@ -82,6 +83,7 @@ const PopUpItem = styled.p`
 const CalendarPopUp: React.FunctionComponent<Props> = ({
   clickedEvent,
   unsetClickedEvent,
+  deleteEvent,
 }) => {
   const [state, dispatch]: [State, React.Dispatch<Action>] = useReducer(
     reducer,
@@ -113,14 +115,15 @@ const CalendarPopUp: React.FunctionComponent<Props> = ({
         <div
           onClick={e => {
             e.stopPropagation();
-            console.log('Clicked');
           }}
           className="text-gray-900 font-light"
         >
           <PopUpItem>{clickedEvent.event?.title}</PopUpItem>
           <PopUpItem>To Student Profile</PopUpItem>
           <PopUpItem>Cancel Appointment</PopUpItem>
-          <PopUpItem>Delete Appointment</PopUpItem>
+          <PopUpItem onClick={() => deleteEvent(clickedEvent)}>
+            Delete Appointment
+          </PopUpItem>
           <PopUpItem onClick={unsetClickedEvent}>Close</PopUpItem>
         </div>
       </Wrapper>
