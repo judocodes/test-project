@@ -1,10 +1,11 @@
 import { EventInput } from '@fullcalendar/react';
 import { nanoid } from 'nanoid';
-import tw from 'twin.macro';
+import { Student, students } from './students';
 
-const style = tw`bg-blue-200 text-blue-100` as { [e: string]: string };
-const twBackgroundColor = style.backgroundColor.replace(/var.*/, '1)');
-const twColor = style.color;
+export interface CustomEventInput extends EventInput {
+  confirmed: boolean;
+  student: Student;
+}
 
 // Handy vars
 const tomorrow = new Date();
@@ -12,7 +13,7 @@ tomorrow.setDate(new Date().getUTCDate() + 1);
 tomorrow.setUTCHours(0, 0, 0, 0);
 const tomorrowString = tomorrow.toISOString();
 
-const eventTitles = 'ABCDEFG'.split('');
+// Start times to work with
 let startTimes: number[] = [];
 for (let i = 10; i <= 16; i++) {
   // Get miliseconds of start time.
@@ -24,15 +25,15 @@ for (let i = 10; i <= 16; i++) {
 }
 
 // Events List
-const events: EventInput[] = startTimes.map(
-  (time, idx): EventInput => ({
+export const events: CustomEventInput[] = startTimes.map(
+  (time, idx): CustomEventInput => ({
     id: nanoid(),
     allDay: false,
     start: tomorrow,
     // startTime is ms starting from 0:00 on the same day, not since 1970
     startTime: time - tomorrow.getTime(),
     endTime: time - tomorrow.getTime() + 1000 * 60 * 60,
-    title: eventTitles[idx],
+    title: students[idx].firstName + ' ' + students[idx].lastName,
     daysOfWeek: [tomorrow.getUTCDay()],
     classNames: ['p-1'],
     editable: true,
@@ -42,7 +43,6 @@ const events: EventInput[] = startTimes.map(
 
     // Extended Props
     confirmed: true,
+    student: students[idx],
   })
 );
-
-export { events };

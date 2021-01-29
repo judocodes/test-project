@@ -8,6 +8,9 @@ import { convertToEventInput } from './convert-event-object';
 import { getDateOnly, getTimeOnly } from './date-conversion';
 import { nanoid } from 'nanoid';
 
+import { students, Student, TimeWindow } from '../test-data/students';
+import { CustomEventInput } from '../test-data/events';
+
 // spontaneous cancellation of ONE lesson in the middle.
 
 // filter events by day of cancellation.
@@ -26,53 +29,10 @@ import { nanoid } from 'nanoid';
 // Save the availability of the student!
 // schedule his/her^ lesson.
 
-export interface Student {
-  id: string;
-  asked?: number;
-  availableSlot?: {
-    start: any;
-    end: any;
-  };
-}
-
-export interface LeewayEvent {
-  id: string;
-  minutes: number;
-}
-
-let referenceEvent = {
-  start: '2020-12-19',
-  startTime: 1608372000000,
-  title: 'A',
-  daysOfWeek: [6],
-  classNames: ['bg-gray-700', 'text-white'],
-  editable: false,
-  display: 'auto',
-  constraint: 'businessHours',
-  extendedProps: { studentId: 'A' },
-};
-
-// Create simple array of students with student.id
-export let students: Student[] = [];
-for (let i = 0; i < 'ABCDEFG'.length; i++) {
-  students.push({ id: 'ABCDEFG'[i] });
-}
-
-export const leewayEvents: LeewayEvent[] = students
-  .map((s, i) => {
-    if (i > 4) return;
-
-    return {
-      id: s.id,
-      minutes: Math.floor(Math.random() * 241),
-    };
-  })
-  .filter(s => s) as LeewayEvent[];
-
 export const getRescheduledEvent = (
-  deletedEvent: EventInput | EventApi,
-  events: EventInput[]
-): EventInput | null => {
+  deletedEvent: CustomEventInput | EventApi,
+  events: CustomEventInput[]
+): CustomEventInput | null => {
   // Make sure that deletedEvent is instance of EventApi
   deletedEvent = convertToEventInput(deletedEvent);
 
@@ -86,30 +46,27 @@ export const getRescheduledEvent = (
   if (!isMiddleCancellation(deletedEvent, sameDayEvents)) return null;
 
   /*** Check if there's enough remaining time until the event. ***/
-  //! if (isSpontaneous(deletedEvent)) {
-  //!  return; /* TODO: Implement spontaneous logic */
-  //! }
+  const eventIsSpontaneous = isEventSpontaneous(deletedEvent);
 
   // Check if there are ANY students with leeway events.
-  const leewayEvent = getLeewayEvent(leewayEvents);
-  if (leewayEvent) {
-    console.log([...leewayEvents]);
-    leewayEvent.minutes -=
-      (deletedEvent.endTime - deletedEvent.startTime) / (1000 * 60);
-    // TODO: Implement logic to let the student accept the request!
-    const pendingEvent = {
-      ...deletedEvent,
-      title: leewayEvent.id,
-      confirmed: false,
-      id: nanoid(),
-    };
-    return pendingEvent as EventInput;
+  const leewayStudent = findHighestLeewayStudent(students);
+  if (leewayStudent) {
+    // if there are leeway events, ask those students first.
+    // TODO: ONLY reduce if event is accepted.
+    var pendingEvent = createLeewayLesson(deletedEvent, leewayStudent);
+  } else {
+    // If no leeway event, proceed to ask the latter or the previous student (if not spontaneous cancellation
+    var pendingEvent: CustomEventInput = getBestRescheduleLesson(
+      sameDayEvents,
+      eventIsSpontaneous
+    );
   }
 
-  return null;
+  // TODO: Implement logic to let the student accept the request!
+  return pendingEvent;
 };
 
-function isSpontaneous(deletedEvent: EventInput): boolean {
+function isEventSpontaneous(deletedEvent: CustomEventInput): boolean {
   // Convert date if necessary
   let startDate: Date;
   if (deletedEvent.start instanceof Date) {
@@ -127,8 +84,8 @@ function isSpontaneous(deletedEvent: EventInput): boolean {
 }
 
 function isMiddleCancellation(
-  deletedEvent: EventInput,
-  relevantEvents: EventInput[]
+  deletedEvent: CustomEventInput,
+  relevantEvents: CustomEventInput[]
 ) {
   return (
     // if some events start later than deleted event
@@ -139,7 +96,10 @@ function isMiddleCancellation(
   );
 }
 
-function getSameDayEvents(inputEvent: EventInput, events: EventInput[]) {
+function getSameDayEvents(
+  inputEvent: CustomEventInput,
+  events: CustomEventInput[]
+) {
   return events.filter(
     event =>
       getDateOnly(inputEvent.start as string).getTime() ==
@@ -147,11 +107,69 @@ function getSameDayEvents(inputEvent: EventInput, events: EventInput[]) {
   );
 }
 
-function getLeewayEvent(leewayEvents: LeewayEvent[] = []) {
+function findHighestLeewayStudent(students: Student[] = []) {
   // Get the student with the highest minutes-count
-  return leewayEvents.reduce((result: null | LeewayEvent, current) => {
-    if (!result) return current;
-    if (current.minutes > result.minutes) return current;
-    else return result;
-  }, null);
+  const highestLeewayStudent = students.reduce(
+    (selectedStudent: null | Student, currentStudent) => {
+      if (
+        !selectedStudent ||
+        currentStudent.leewayMinutes > selectedStudent.leewayMinutes
+      ) {
+        return currentStudent;
+      } else {
+        return selectedStudent;
+      }
+    },
+    null
+  );
+  // If nobody has >30 minutes to make up, nobody is selected.
+  return highestLeewayStudent!.leewayMinutes > 30 ? highestLeewayStudent : null;
+}
+
+// This creates a new lesson based on leeway minutes of the students.
+function createLeewayLesson(
+  deletedEvent: CustomEventInput,
+  student: Student
+): CustomEventInput {
+  // reduce students leeway minute budget
+  student.leewayMinutes -=
+    (deletedEvent.endTime - deletedEvent.startTime) / (1000 * 60);
+
+  // return a new event
+  return {
+    ...deletedEvent,
+    id: nanoid(),
+    allDay: false,
+    confirmed: false,
+    student,
+  };
+}
+
+// This returns the ideal event to be rescheduled.
+function getBestRescheduleLesson(
+  events: CustomEventInput[],
+  isSpontaneous: boolean
+): CustomEventInput {
+  if (!events.length) return null;
+
+  // get first and last event of the day
+  events.sort((a, b) => (a.startTime >= b.startTime ? 1 : -1));
+  const firstEvent = events[0];
+  const [lastEvent] = events.slice(-1);
+
+  let rescheduledEvent: CustomEventInput;
+  if (
+    isSpontaneous ||
+    lastEvent.student.rescheduleCount < firstEvent.student.rescheduleCount
+  ) {
+    // if spontaneous OR latterPerson has been rescheduled less: ask the latter person
+    rescheduledEvent = lastEvent;
+  } else {
+    rescheduledEvent = firstEvent;
+  }
+
+  rescheduledEvent.student.rescheduleCount++;
+  return rescheduledEvent;
+
+  // whereever the last event is returned, i need to make sure that the id of the event should be filtered out of the React State..
 }

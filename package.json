@@ -16,12 +16,15 @@
   },
   "license": "0BSD",
   "dependencies": {
+    "@aws-amplify/ui-react": "^0.2.34",
     "@fullcalendar/bootstrap": "^5.4.0",
     "@fullcalendar/interaction": "^5.4.0",
     "@fullcalendar/react": "^5.4.0",
     "@fullcalendar/timegrid": "^5.4.0",
     "@types/styled-components": "^5.1.5",
+    "@types/validator": "^13.1.3",
     "autoprefixer": "^10.1.0",
+    "aws-amplify": "^3.3.14",
     "babel-plugin-styled-components": "^1.12.0",
     "classcat": "^4.1.0",
     "gatsby": "^2.26.1",
@@ -29,6 +32,7 @@
     "gatsby-plugin-postcss": "^3.3.0",
     "gatsby-plugin-sharp": "^2.10.1",
     "gatsby-plugin-styled-components": "^3.6.0",
+    "gatsby-plugin-web-font-loader": "^1.0.4",
     "gatsby-source-filesystem": "^2.7.0",
     "gatsby-transformer-sharp": "^2.8.0",
     "nanoid": "^3.1.20",
@@ -37,8 +41,11 @@
     "postcss-custom-properties": "^10.0.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "react-hook-form": "^6.14.2",
+    "react-icons": "^4.1.0",
     "styled-components": "^5.2.1",
-    "twin.macro": "^2.0.7"
+    "twin.macro": "^2.0.7",
+    "validator": "^13.5.2"
   },
   "devDependencies": {
     "tailwindcss": "^2.0.2"

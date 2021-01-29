@@ -1,18 +1,15 @@
-import React from 'react';
-import { Calendar } from '../components/calendar/Calendar';
-import tw from 'twin.macro';
-import styled from 'styled-components';
+import React, { PropsWithChildren, ReactElement } from 'react';
+import { Router } from '@reach/router';
+import Dashboard from '../client-only/Dashboard';
 
-const Div = styled.div`
-  ${tw`h-2/3 w-2/3 mx-auto mt-8 relative`}
-`;
-
-const Index: React.FC = props => {
+function Index(props: PropsWithChildren<Props>): ReactElement {
   return (
-    <Div>
-      <Calendar />
-    </Div>
+    <Router basepath="/">
+      <Dashboard />
+    </Router>
   );
-};
+}
+
+interface Props {}
 
 export default Index;

@@ -21,7 +21,7 @@ import CalendarPopUp, { myEventClickArg } from './CalendarPopUp';
 import CalendarOptions from './CalendarOptions';
 
 // Test Data
-import { events } from '../../test-data/events';
+import { events, CustomEventInput } from '../../test-data/events';
 
 // Hooks & Utils
 import { useCalendarOptions } from './useCalendarOptions';
@@ -50,30 +50,23 @@ const Calendar: React.FunctionComponent<IProps> = props => {
   const [options, dispatchOptions] = useCalendarOptions();
 
   const calendarEl = useRef<FullCalendar>(null);
-  const [allEvents, setAllEvents] = useState<EventInput[]>(events);
+  const [allEvents, setAllEvents] = useState<CustomEventInput[]>(events);
 
   const [clickedEvent, setClickedEvent] = useState<myEventClickArg>(null);
 
-  // useEffect(() => {
-  //   const calendar = calendarEl.current?.getApi();
-  //   // Dynamically Set Content Height
-  //   // calendar.setOption('contentHeight', 700);
-  // }, [calendarEl]);
-
   const handleSelect = (selectionInfo: DateSelectArg) => {
-    const title = prompt('Name of the Event');
-
-    if (confirm('Do you want to add this event?')) {
-      if (title) {
-        const newEvent = {
-          ...selectionInfo,
-          id: nanoid(),
-          confirmed: false,
-          title,
-        };
-        setAllEvents(e => [...e, newEvent]);
-      }
-    }
+    // const title = prompt('Name of the Event');
+    // if (confirm('Do you want to add this event?')) {
+    //   if (title) {
+    //     const newEvent = {
+    //       ...selectionInfo,
+    //       id: nanoid(),
+    //       confirmed: false,
+    //       title,
+    //     };
+    //     setAllEvents(e => [...e, newEvent]);
+    //   }
+    // }
   };
 
   const handleEventClick = (event: EventClickArg) => {
@@ -84,17 +77,32 @@ const Calendar: React.FunctionComponent<IProps> = props => {
     setClickedEvent(null);
   };
 
-  const deleteEvent = (removedEvent: myEventClickArg) => {
+  const deleteEvent = ({ event: removedEvent }: myEventClickArg) => {
     if (confirm('Do you want to delete this event?')) {
-      const newEvent = getRescheduledEvent(removedEvent.event, allEvents);
-      if (newEvent) {
+      const newEvent = getRescheduledEvent(removedEvent, allEvents);
+      // allEvents.forEach(({ id, student: {rescheduleCount} }) => {
+      //   console.log({ id, rescheduleCount });
+      // });
+      // console.log('_______________________');
+      if (!newEvent) {
+        // If no event can be found, simply delete
         setAllEvents(events => [
-          ...events.filter(e => e.id !== removedEvent.event.id),
+          ...events.filter(e => !(e.id === removedEvent.id)),
+        ]);
+      } else {
+        // If there is a leeway event available, enter this
+        setAllEvents(events => [
+          ...events.filter(
+            e => !(e.id === removedEvent.id) || !(e.id === newEvent.id)
+          ),
           newEvent,
         ]);
       }
 
-      /* normally:
+      unsetClickedEvent();
+
+      /*
+        with API:
 
           send to API that this event is removed
           delete it from DB
